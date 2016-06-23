@@ -46,8 +46,15 @@ generateLine past seed markov =
 
             -- Break at comma if we already have 12 words
             Just newWord ->
-                if (newWord == "," && (List.length past) > 12) then
-                    (nextSeed, List.reverse past)
+                if (newWord == ",") then
+                    if (List.length past) > 12 then
+                        (nextSeed, List.reverse past)
+                    else
+                        if (List.length past) == 0 then
+                            -- skip leading comma
+                            generateLine past nextSeed markov
+                        else
+                            generateLine (newWord :: past) nextSeed markov
                 else
                     generateLine (newWord :: past) nextSeed markov
 
@@ -131,11 +138,15 @@ view model =
               , "width" => "100%"
               , "height" => "100%"
               , "margin" => "0"
-              , "padding" => "0"
+              , "padding" => "2em"
               , "font-family" => "Courier New, monospace"
+              , "text-align" => "center"
               ]
         ]
-        ( [ button [ onClick <| Generate 10 ] [ text "Generate" ] ]
+        ( [ h1
+            [ ]
+            [ text "DEATH GRIPSUM" ]
+          , button [ onClick <| Generate 20 ] [ text "Generate" ] ]
           ++ List.map lyricLine model.lyric
         )
 
@@ -153,12 +164,15 @@ subscriptions model =
 
 init : StateMachine String -> Flags -> (Model, Cmd Msg)
 init sm flags =
-    ( { seed = (uncurry initialSeed2) flags.randomSeed
-      , markov = sm
-      , lyric = []
-      }
-    , Platform.Cmd.none
-    )
+    let
+        (seed, initialLyric) = generate 20 ((uncurry initialSeed2) flags.randomSeed) sm
+    in
+        ( { seed = seed
+          , markov = sm
+          , lyric = initialLyric
+          }
+        , Platform.Cmd.none
+        )
 
 
 -- PORTS
